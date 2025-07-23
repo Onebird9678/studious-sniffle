@@ -8,54 +8,12 @@
         :root { --board-bg: #c0c0c0; --cell-border: #808080; --cell-border-light: #ffffff; --revealed-bg: #bdbdbd; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background-color: #f0f2f5; user-select: none; }
         
-        /* --- 게임 설명 모달 스타일 --- */
-        #rules-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            z-index: 200;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #rules-modal {
-            background-color: #f0f2f5;
-            padding: 25px 40px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            max-width: 500px;
-            text-align: left;
-            line-height: 1.6;
-        }
-        #rules-modal h2, #rules-modal h3 {
-            text-align: center;
-            margin-top: 0;
-            margin-bottom: 15px;
-        }
-        #rules-modal ul {
-            padding-left: 20px;
-            margin-top: 0;
-        }
-        #rules-modal button {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            margin-top: 20px;
-        }
-        #rules-modal-overlay.hidden {
-            display: none;
-        }
-
+        #rules-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 200; display: flex; justify-content: center; align-items: center; }
+        #rules-modal { background-color: #f0f2f5; padding: 25px 40px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-width: 500px; text-align: left; line-height: 1.6; }
+        #rules-modal h2, #rules-modal h3 { text-align: center; margin-top: 0; margin-bottom: 15px; }
+        #rules-modal ul { padding-left: 20px; margin-top: 0; }
+        #rules-modal button { display: block; width: 100%; padding: 12px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; margin-top: 20px; }
+        #rules-modal-overlay.hidden { display: none; }
 
         #global-menu { margin-bottom: 20px; }
         #start-competition { padding: 10px 20px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }
@@ -78,6 +36,9 @@
         .cell.flagged { font-size: 16px; }
         .cell.mine { background-color: #ff0000; }
         .cell.wrong-flag { background-color: #ffcccc; }
+        
+        .cell.cell-preview { background-color: var(--revealed-bg); border: 1px solid #7b7b7b; }
+
         .cell[data-count="1"] { color: #0000ff; } .cell[data-count="2"] { color: #008200; } .cell[data-count="3"] { color: #ff0000; } .cell[data-count="4"] { color: #000084; } .cell[data-count="5"] { color: #840000; } .cell[data-count="6"] { color: #008284; } .cell[data-count="7"] { color: #840084; } .cell[data-count="8"] { color: #757575; }
         
         #result-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 30px 50px; background-color: rgba(0, 0, 0, 0.85); color: white; font-size: 48px; font-weight: bold; border-radius: 10px; z-index: 100; pointer-events: none; text-align: center; }
@@ -91,15 +52,22 @@
             <h2>지뢰찾기 대결 규칙!</h2>
             <p><strong>목표:</strong> 지뢰(💣)를 밟지 않고 모든 지뢰를 찾아내세요!</p>
             <ul>
-                <li><strong>좌클릭:</strong> 칸을 엽니다.
+                <li><strong>좌클릭 (짧게):</strong>
                     <ul>
-                        <li><strong>숫자</strong>는 주변 8칸에 숨겨진 지뢰의 개수입니다.</li>
-                        <li><strong>빈 칸</strong>은 주변에 지뢰가 없다는 뜻이며, 주변 칸도 함께 열립니다.</li>
-                        <li><strong>지뢰(💣)</strong>를 누르면 당신의 게임은 종료됩니다.</li>
-                        <li><strong>주변 칸 한번에 열기 (고급 기술):</strong> 열려있는 숫자 칸 주위에 숫자만큼 깃발(🚩)을 꽂은 후, <strong>해당 숫자 칸을 다시 좌클릭</strong>해 보세요. 깃발이 정확하다면 나머지 주변 칸들이 한번에 열립니다. (주의: 깃발이 잘못 꽂혀있었다면 지뢰가 터집니다!)</li>
+                        <li>닫힌 칸을 클릭: 칸을 **영구적으로 엽니다.**</li>
+                        <li>열린 숫자 칸을 클릭: 주변 칸들을 **실제로 엽니다.**
+                            <br> - (안전 모드: 주변 깃발이 없으면 안전한 칸만 열림)
+                            <br> - (위험 모드: 주변 깃발이 있으면 판단이 틀릴 시 게임 종료)
+                        </li>
                     </ul>
                 </li>
-                <li><strong>우클릭:</strong> 깃발(🚩)을 꽂습니다. 지뢰라고 생각되는 곳을 표시하세요. 지뢰 수만큼만 꽂을 수 있습니다.</li>
+                 <li><strong>좌클릭 (꾹 누르기):</strong>
+                    <ul>
+                        <li>열린 숫자 칸 위에서 꾹 누르면, **주변을 엿보는 미리보기 기능만** 작동합니다.</li>
+                        <li>마우스를 떼면 미리보기는 사라지고, 아무 칸도 열리지 않습니다.</li>
+                    </ul>
+                </li>
+                <li><strong>우클릭:</strong> 깃발(🚩)을 꽂습니다.</li>
             </ul>
             <h3>vs AI 대결 규칙</h3>
             <p>AI와 당신의 게임이 <strong>모두 끝나야</strong> 승패가 결정됩니다. 최종적으로 <strong>지뢰를 더 정확하게 많이 찾은 쪽</strong>이 승리합니다!</p>
@@ -112,6 +80,7 @@
     </div>
 
     <div id="main-container">
+        <!-- HTML 구조는 동일 -->
         <div id="player-game" class="game-instance-container">
             <div id="player-overlay" class="board-overlay hidden">게임 종료</div>
             <h1>플레이어</h1>
@@ -141,16 +110,11 @@
         const AI_CARELESS_THRESHOLD = 18;
         const AI_CARELESS_MISTAKE_RATE = 0.4;
 
-        let playerGame, aiGame;
-        let isCompetitionRunning = false;
-        let competitionTimerInterval;
-
+        let playerGame, aiGame, isCompetitionRunning = false, competitionTimerInterval;
         const startButton = document.getElementById('start-competition');
-        const resultMessageElement = document.getElementById('result-message');
         const rulesModalOverlay = document.getElementById('rules-modal-overlay');
-        const closeRulesButton = document.getElementById('close-rules-modal');
 
-        closeRulesButton.addEventListener('click', () => {
+        document.getElementById('close-rules-modal').addEventListener('click', () => {
             rulesModalOverlay.classList.add('hidden');
             startButton.disabled = false;
         });
@@ -164,6 +128,7 @@
             constructor(idPrefix, isPlayer) {
                 this.idPrefix = idPrefix; this.isPlayer = isPlayer;
                 this.isBoardOver = false; this.aiInterval = null;
+                this.wasJustPreviewing = false; // ★★★ 미리보기 행동 추적 플래그
                 this.boardElement = document.getElementById(`${idPrefix}-board`);
                 this.mineCounterElement = document.getElementById(`${idPrefix}-mine-counter`);
                 this.timerElement = document.getElementById(`${idPrefix}-timer`);
@@ -171,61 +136,122 @@
             }
             
             setup() { this.board = []; this.flags = 0; this.isBoardOver = false; this.overlayElement.classList.add('hidden'); this.updateMineCounter(); this.createBoard(); }
-            createBoard() { this.board = Array.from({ length: settings.height }, (_, y) => Array.from({ length: settings.width }, (_, x) => ({ y, x, isMine: false, isRevealed: false, isFlagged: false, adjacentMines: 0 }))); this.boardElement.innerHTML = ''; this.boardElement.style.gridTemplateColumns = `repeat(${settings.width}, 1fr)`; for (let y = 0; y < settings.height; y++) { for (let x = 0; x < settings.width; x++) { const cellElement = document.createElement('div'); cellElement.classList.add('cell'); cellElement.dataset.y = y; cellElement.dataset.x = x; if (this.isPlayer) { cellElement.classList.add('player-cell'); cellElement.addEventListener('click', () => this.handleCellClick(y, x)); cellElement.addEventListener('contextmenu', (e) => { e.preventDefault(); this.handleRightClick(y, x); }); } this.boardElement.appendChild(cellElement); } } }
+            
+            createBoard() {
+                this.board = Array.from({ length: settings.height }, (_, y) => Array.from({ length: settings.width }, (_, x) => ({ y, x, isMine: false, isRevealed: false, isFlagged: false, adjacentMines: 0 })));
+                this.boardElement.innerHTML = '';
+                this.boardElement.style.gridTemplateColumns = `repeat(${settings.width}, 1fr)`;
+                for (let y = 0; y < settings.height; y++) {
+                    for (let x = 0; x < settings.width; x++) {
+                        const cellElement = document.createElement('div');
+                        cellElement.classList.add('cell');
+                        cellElement.dataset.y = y;
+                        cellElement.dataset.x = x;
+                        if (this.isPlayer) {
+                            cellElement.classList.add('player-cell');
+                            cellElement.addEventListener('click', () => this.handleCellClick(y, x));
+                            cellElement.addEventListener('contextmenu', (e) => { e.preventDefault(); this.handleRightClick(y, x); });
+                            cellElement.addEventListener('mousedown', (e) => this.handleMouseDown(e, y, x));
+                            cellElement.addEventListener('mouseup', () => this.clearPreview());
+                            cellElement.addEventListener('mouseout', () => this.clearPreview());
+                        }
+                        this.boardElement.appendChild(cellElement);
+                    }
+                }
+            }
+            
+            handleMouseDown(event, y, x) {
+                if (event.button !== 0 || this.isBoardOver) return;
+                const cellData = this.board[y][x];
+                if (cellData.isRevealed && cellData.adjacentMines > 0) {
+                    this.wasJustPreviewing = true; // ★★★ 미리보기 시작을 알림
+                    this.getNeighbors(y, x).forEach(neighbor => {
+                        if (!neighbor.isRevealed && !neighbor.isFlagged) {
+                            this.boardElement.querySelector(`[data-y='${neighbor.y}'][data-x='${neighbor.x}']`)?.classList.add('cell-preview');
+                        }
+                    });
+                }
+            }
+
+            clearPreview() {
+                this.boardElement.querySelectorAll('.cell-preview').forEach(el => el.classList.remove('cell-preview'));
+            }
+
             startLogic() { const startY = Math.floor(Math.random() * settings.height); const startX = Math.floor(Math.random() * settings.width); this.placeMines(startY, startX); if (!this.isPlayer) { this.revealCell(this.board[startY][startX]); this.aiInterval = setInterval(() => this.aiTurn(), AI_THINK_SPEED); } }
             placeMines(firstClickY, firstClickX) { let minesPlaced = 0; while (minesPlaced < settings.mines) { const y = Math.floor(Math.random() * settings.height); const x = Math.floor(Math.random() * settings.width); const isSafeZone = Math.abs(y - firstClickY) <= 1 && Math.abs(x - firstClickX) <= 1; if (!this.board[y][x].isMine && !(y === firstClickY && x === firstClickX) && !isSafeZone) { this.board[y][x].isMine = true; minesPlaced++; } } for (let y = 0; y < settings.height; y++) { for (let x = 0; x < settings.width; x++) { if (!this.board[y][x].isMine) this.board[y][x].adjacentMines = this.getNeighbors(y, x).filter(n => n.isMine).length; } } }
             
             handleCellClick(y, x) {
                 if (!isCompetitionRunning || this.isBoardOver) return;
-                const cell = this.board[y][x];
-
-                // [고급 기능] 열려있는 숫자 칸을 다시 클릭했을 때의 동작 (Chording)
-                // 주변의 깃발 개수와 칸의 숫자가 일치하면, 깃발이 없는 나머지 칸들을 모두 엽니다.
-                if (cell.isRevealed && cell.adjacentMines > 0) {
-                    const neighbors = this.getNeighbors(y, x);
-                    const flagCount = neighbors.filter(n => n.isFlagged).length;
-
-                    if (flagCount === cell.adjacentMines) {
-                        neighbors.forEach(n => {
-                            if (!n.isFlagged && !n.isRevealed) {
-                                this.revealCell(n);
-                            }
-                        });
-                    }
-                    return; // Chording 동작 후에는 함수를 종료합니다.
+                
+                // ★★★ 핵심 수정: 미리보기 직후의 클릭은 무시
+                if (this.wasJustPreviewing) {
+                    this.wasJustPreviewing = false; // 플래그를 리셋하고
+                    return; // 함수를 즉시 종료
                 }
 
-                // 일반적인 칸 열기 동작
-                if (cell.isRevealed || cell.isFlagged) return;
+                const cell = this.board[y][x];
+
+                // 열린 칸을 "짧게" 클릭했을 때 (주변 열기)
+                if (cell.isRevealed) {
+                    if (cell.adjacentMines > 0) {
+                        const neighbors = this.getNeighbors(y, x);
+                        const flagCount = neighbors.filter(n => n.isFlagged).length;
+
+                        if (flagCount === 0) { // 안전 모드
+                            neighbors.forEach(n => {
+                                if (!n.isFlagged && !n.isRevealed && !n.isMine) { this.revealCell(n); }
+                            });
+                        } else { // 위험 모드
+                            const hasIncorrectFlag = neighbors.some(n => n.isFlagged && !n.isMine);
+                            if (hasIncorrectFlag) { this.finishBoard(); return; }
+                            neighbors.forEach(n => {
+                                if (!n.isFlagged && !n.isRevealed) { this.revealCell(n); }
+                            });
+                        }
+                    }
+                    return;
+                }
+
+                // 닫힌 칸을 처음 클릭했을 때
+                if (cell.isFlagged) return;
                 this.revealCell(cell);
             }
 
-            revealCell(cell) { if (!cell || cell.isRevealed || cell.isFlagged) return; cell.isRevealed = true; this.revealCellDOM(cell); if (cell.isMine) { this.finishBoard(); return; } if (cell.adjacentMines === 0) this.getNeighbors(cell.y, cell.x).forEach(n => this.revealCell(n)); this.checkWin(); }
+            revealCell(cell) {
+                if (!cell || cell.isRevealed || cell.isFlagged) return;
+                cell.isRevealed = true;
+                this.revealCellDOM(cell);
+                if (cell.isMine) { this.finishBoard(); return; }
+                if (cell.adjacentMines === 0) {
+                    this.getNeighbors(cell.y, cell.x).forEach(n => this.revealCell(n));
+                }
+                this.checkWin();
+            }
             
             handleRightClick(y, x) {
                 if (!isCompetitionRunning || this.isBoardOver || this.board[y][x].isRevealed) return;
                 const cell = this.board[y][x];
                 const cellElement = this.boardElement.querySelector(`[data-y='${y}'][data-x='${x}']`);
-
-                if (cell.isFlagged) {
-                    cell.isFlagged = false;
-                    this.flags--;
-                    cellElement.innerText = '';
-                } else {
-                    // 깃발을 새로 설치하려 하고, 깃발 수가 지뢰 수와 같거나 많으면 함수 종료
-                    if (this.flags >= settings.mines) {
-                        return;
-                    }
-                    cell.isFlagged = true;
-                    this.flags++;
-                    cellElement.innerText = '🚩';
-                }
+                if (cell.isFlagged) { cell.isFlagged = false; this.flags--; cellElement.innerText = ''; } else { if (this.flags >= settings.mines) { return; } cell.isFlagged = true; this.flags++; cellElement.innerText = '🚩'; }
                 this.updateMineCounter();
             }
 
             finishBoard() { if (this.isBoardOver) return; this.isBoardOver = true; this.overlayElement.classList.remove('hidden'); if (!this.isPlayer) this.stopAI(); checkCompetitionEnd(); }
             checkWin() { const revealedCount = this.board.flat().filter(cell => cell.isRevealed).length; if (revealedCount === settings.width * settings.height - settings.mines) { this.finishBoard(); } }
-            revealCellDOM(cell) { const cellElement = this.boardElement.querySelector(`[data-y='${cell.y}'][data-x='${cell.x}']`); if (!cellElement) return; cellElement.classList.add('revealed'); if (cell.isMine) { cellElement.innerText = '💣'; cellElement.classList.add('mine'); } else if (cell.adjacentMines > 0) { cellElement.innerText = cell.adjacentMines; cellElement.dataset.count = cell.adjacentMines; } }
+            
+            revealCellDOM(cell) {
+                const cellElement = this.boardElement.querySelector(`[data-y='${cell.y}'][data-x='${cell.x}']`);
+                if (!cellElement) return;
+                cellElement.classList.add('revealed');
+                if (cell.isMine) {
+                    cellElement.innerText = '💣';
+                    cellElement.classList.add('mine');
+                } else if (cell.adjacentMines > 0) {
+                    cellElement.innerText = cell.adjacentMines;
+                    cellElement.dataset.count = cell.adjacentMines;
+                }
+            }
+
             revealFinalBoard() { this.board.flat().forEach(cell => { const cellElement = this.boardElement.querySelector(`[data-y='${cell.y}'][data-x='${cell.x}']`); if (!cellElement) return; if (cell.isFlagged && !cell.isMine) { cellElement.innerText = '❌'; cellElement.classList.add('wrong-flag'); } else if (cell.isMine && !cell.isFlagged) { this.revealCellDOM(cell); } }); }
             updateMineCounter() { this.mineCounterElement.innerText = `남은 지뢰: ${settings.mines - this.flags}`; }
             getNeighbors(y, x) { const n = []; for (let yo = -1; yo <= 1; yo++) { for (let xo = -1; xo <= 1; xo++) { if (yo === 0 && xo === 0) continue; const ny = y + yo; const nx = x + xo; if (ny >= 0 && ny < settings.height && nx >= 0 && nx < settings.width) n.push(this.board[ny][nx]); } } return n; }
@@ -249,53 +275,12 @@
             makeRandomGuess() { const hidden = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged); if (hidden.length > 0) { this.revealCell(hidden[Math.floor(Math.random() * hidden.length)]); } }
         }
 
-        function setupCompetition() {
-            isCompetitionRunning = false;
-            resultMessageElement.classList.add('hidden');
-            clearInterval(competitionTimerInterval);
-            playerGame = new GameInstance('player', true);
-            aiGame = new GameInstance('ai', false);
-            playerGame.setup();
-            aiGame.setup();
-            startButton.disabled = false;
-            startButton.innerText = "대결 시작";
-        }
-
-        function startCompetition() {
-            if (isCompetitionRunning) return;
-            isCompetitionRunning = true;
-            startButton.disabled = true;
-            playerGame.startLogic();
-            aiGame.startLogic();
-            let time = 0;
-            competitionTimerInterval = setInterval(() => {
-                if (!isCompetitionRunning) { clearInterval(competitionTimerInterval); return; }
-                time++;
-                playerGame.timerElement.innerText = `시간: ${time}`;
-                aiGame.timerElement.innerText = `시간: ${time}`;
-            }, 1000);
-        }
-
+        function setupCompetition() { isCompetitionRunning = false; document.getElementById('result-message').classList.add('hidden'); clearInterval(competitionTimerInterval); playerGame = new GameInstance('player', true); aiGame = new GameInstance('ai', false); playerGame.setup(); aiGame.setup(); startButton.disabled = false; startButton.innerText = "대결 시작"; }
+        function startCompetition() { if (isCompetitionRunning) return; isCompetitionRunning = true; startButton.disabled = true; playerGame.startLogic(); aiGame.startLogic(); let time = 0; competitionTimerInterval = setInterval(() => { if (!isCompetitionRunning) { clearInterval(competitionTimerInterval); return; } time++; playerGame.timerElement.innerText = `시간: ${time}`; aiGame.timerElement.innerText = `시간: ${time}`; }, 1000); }
         function checkCompetitionEnd() { if (playerGame.isBoardOver && aiGame.isBoardOver) { isCompetitionRunning = false; showFinalResult(); } }
         function calculateCorrectFlags(board) { return board.flat().filter(cell => cell.isFlagged && cell.isMine).length; }
+        function showFinalResult() { startButton.disabled = false; startButton.innerText = "다시 시작"; const playerCorrectFlags = calculateCorrectFlags(playerGame.board); const aiCorrectFlags = calculateCorrectFlags(aiGame.board); let resultText = ''; let subText = `플레이어: ${playerCorrectFlags}개 발견 / AI: ${aiCorrectFlags}개 발견`; if (playerCorrectFlags === aiCorrectFlags) { resultText = '무승부!'; } else if (playerCorrectFlags > aiCorrectFlags) { resultText = '플레이어 승리!'; } else { resultText = 'AI 승리!'; } document.getElementById('result-message').innerHTML = `${resultText}<small>${subText}</small>`; document.getElementById('result-message').classList.remove('hidden'); playerGame.revealFinalBoard(); aiGame.revealFinalBoard(); }
         
-        function showFinalResult() {
-            startButton.disabled = false;
-            startButton.innerText = "다시 시작";
-            const playerCorrectFlags = calculateCorrectFlags(playerGame.board);
-            const aiCorrectFlags = calculateCorrectFlags(aiGame.board);
-            let resultText = '';
-            let subText = `플레이어: ${playerCorrectFlags}개 발견 / AI: ${aiCorrectFlags}개 발견`;
-            if (playerCorrectFlags === aiCorrectFlags) { resultText = '무승부!'; } 
-            else if (playerCorrectFlags > aiCorrectFlags) { resultText = '플레이어 승리!'; } 
-            else { resultText = 'AI 승리!'; }
-            resultMessageElement.innerHTML = `${resultText}<small>${subText}</small>`;
-            resultMessageElement.classList.remove('hidden');
-            playerGame.revealFinalBoard();
-            aiGame.revealFinalBoard();
-        }
-        
-        // 페이지 로드 시 초기 UI만 설정하고 버튼은 비활성화
         new GameInstance('player', true).createBoard();
         new GameInstance('ai', false).createBoard();
         startButton.disabled = true;
