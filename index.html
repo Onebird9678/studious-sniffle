@@ -15,7 +15,6 @@
         #main-container { display: flex; justify-content: center; align-items: flex-start; gap: 40px; width: 100%; }
         .game-instance-container { position: relative; padding: 20px; background-color: var(--board-bg); border: 3px solid var(--cell-border-light); border-right-color: var(--cell-border); border-bottom-color: var(--cell-border); box-shadow: 5px 5px 15px rgba(0,0,0,0.2); text-align: center; }
         
-        /* 개별 보드 종료 시 나타나는 오버레이 */
         .board-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 10; display: flex; justify-content: center; align-items: center; font-size: 32px; color: white; font-weight: bold; pointer-events: none; border-radius: 2px; }
         .board-overlay.hidden { display: none; }
 
@@ -29,6 +28,7 @@
         .cell.revealed { background-color: var(--revealed-bg); border: 1px solid #7b7b7b; }
         .cell.flagged { font-size: 14px; }
         .cell.mine { background-color: #ff0000; }
+        .cell.wrong-flag { background-color: #ffcccc; } /* 틀린 깃발 배경색 */
         .cell[data-count="1"] { color: #0000ff; } .cell[data-count="2"] { color: #008200; } .cell[data-count="3"] { color: #ff0000; } .cell[data-count="4"] { color: #000084; } .cell[data-count="5"] { color: #840000; } .cell[data-count="6"] { color: #008284; } .cell[data-count="7"] { color: #840084; } .cell[data-count="8"] { color: #757575; }
         
         #result-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 30px 50px; background-color: rgba(0, 0, 0, 0.85); color: white; font-size: 48px; font-weight: bold; border-radius: 10px; z-index: 100; pointer-events: none; text-align: center; }
@@ -38,7 +38,7 @@
 </head>
 <body>
     <div id="global-menu">
-        <button id="start-competition">경쟁 시작</button>
+        <button id="start-competition">대결 시작</button>
     </div>
 
     <div id="main-container">
@@ -119,39 +119,12 @@
                     this.aiInterval = setInterval(() => this.aiTurn(), AI_THINK_SPEED);
                 }
             }
-
-            placeMines(firstClickY, firstClickX) {
-                let minesPlaced = 0;
-                while (minesPlaced < settings.mines) {
-                    const y = Math.floor(Math.random() * settings.height); const x = Math.floor(Math.random() * settings.width);
-                    const isSafeZone = Math.abs(y - firstClickY) <= 1 && Math.abs(x - firstClickX) <= 1;
-                    if (!this.board[y][x].isMine && !(y === firstClickY && x === firstClickX) && !isSafeZone) { this.board[y][x].isMine = true; minesPlaced++; }
-                }
-                for (let y = 0; y < settings.height; y++) { for (let x = 0; x < settings.width; x++) { if (!this.board[y][x].isMine) this.board[y][x].adjacentMines = this.getNeighbors(y, x).filter(n => n.isMine).length; } }
-            }
             
-            handleCellClick(y, x) {
-                if (!isCompetitionRunning || this.isBoardOver || this.board[y][x].isRevealed || this.board[y][x].isFlagged) return;
-                this.revealCell(this.board[y][x]);
-            }
-
-            revealCell(cell) {
-                if (!cell || cell.isRevealed || cell.isFlagged) return;
-                cell.isRevealed = true; this.revealCellDOM(cell.y, cell.x);
-                if (cell.isMine) { this.finishBoard(); return; }
-                if (cell.adjacentMines === 0) this.getNeighbors(cell.y, cell.x).forEach(n => this.revealCell(n));
-                this.checkWin();
-            }
-            
-            handleRightClick(y, x) {
-                if (!isCompetitionRunning || this.isBoardOver || this.board[y][x].isRevealed) return;
-                const cell = this.board[y][x];
-                const cellElement = this.boardElement.querySelector(`[data-y='${y}'][data-x='${x}']`);
-                cell.isFlagged = !cell.isFlagged;
-                if (cell.isFlagged) { this.flags++; cellElement.innerText = '🚩'; } 
-                else { this.flags--; cellElement.innerText = ''; }
-                this.updateMineCounter();
-            }
+            // ... (placeMines, handleCellClick, revealCell, handleRightClick - 변경 없음) ...
+            placeMines(firstClickY, firstClickX) { let minesPlaced = 0; while (minesPlaced < settings.mines) { const y = Math.floor(Math.random() * settings.height); const x = Math.floor(Math.random() * settings.width); const isSafeZone = Math.abs(y - firstClickY) <= 1 && Math.abs(x - firstClickX) <= 1; if (!this.board[y][x].isMine && !(y === firstClickY && x === firstClickX) && !isSafeZone) { this.board[y][x].isMine = true; minesPlaced++; } } for (let y = 0; y < settings.height; y++) { for (let x = 0; x < settings.width; x++) { if (!this.board[y][x].isMine) this.board[y][x].adjacentMines = this.getNeighbors(y, x).filter(n => n.isMine).length; } } }
+            handleCellClick(y, x) { if (!isCompetitionRunning || this.isBoardOver || this.board[y][x].isRevealed || this.board[y][x].isFlagged) return; this.revealCell(this.board[y][x]); }
+            revealCell(cell) { if (!cell || cell.isRevealed || cell.isFlagged) return; cell.isRevealed = true; this.revealCellDOM(cell); if (cell.isMine) { this.finishBoard(); return; } if (cell.adjacentMines === 0) this.getNeighbors(cell.y, cell.x).forEach(n => this.revealCell(n)); this.checkWin(); }
+            handleRightClick(y, x) { if (!isCompetitionRunning || this.isBoardOver || this.board[y][x].isRevealed) return; const cell = this.board[y][x]; const cellElement = this.boardElement.querySelector(`[data-y='${y}'][data-x='${x}']`); cell.isFlagged = !cell.isFlagged; if (cell.isFlagged) { this.flags++; cellElement.innerText = '🚩'; } else { this.flags--; cellElement.innerText = ''; } this.updateMineCounter(); }
 
             finishBoard() {
                 if (this.isBoardOver) return;
@@ -168,59 +141,46 @@
                 }
             }
             
-            revealCellDOM(y, x) { const cell = this.board[y][x]; const cellElement = this.boardElement.querySelector(`[data-y='${y}'][data-x='${x}']`); if (!cellElement) return; cellElement.classList.add('revealed'); if (cell.isMine) { cellElement.innerText = '💣'; cellElement.classList.add('mine'); } else if (cell.adjacentMines > 0) { cellElement.innerText = cell.adjacentMines; cellElement.dataset.count = cell.adjacentMines; } }
+            revealCellDOM(cell) { 
+                const cellElement = this.boardElement.querySelector(`[data-y='${cell.y}'][data-x='${cell.x}']`); 
+                if (!cellElement) return; 
+                cellElement.classList.add('revealed'); 
+                if (cell.isMine) { 
+                    cellElement.innerText = '💣';
+                    cellElement.classList.add('mine'); 
+                } else if (cell.adjacentMines > 0) { 
+                    cellElement.innerText = cell.adjacentMines; 
+                    cellElement.dataset.count = cell.adjacentMines; 
+                } 
+            }
+            
+            // *** 새로운 함수: 게임 종료 시 최종 보드 상태를 표시 ***
+            revealFinalBoard() {
+                this.board.flat().forEach(cell => {
+                    const cellElement = this.boardElement.querySelector(`[data-y='${cell.y}'][data-x='${cell.x}']`);
+                    if (!cellElement) return;
+
+                    // 1. 깃발을 잘못 꽂은 경우
+                    if (cell.isFlagged && !cell.isMine) {
+                        cellElement.innerText = '❌';
+                        cellElement.classList.add('wrong-flag');
+                    }
+                    // 2. 찾지 못한 지뢰
+                    else if (cell.isMine && !cell.isFlagged) {
+                        this.revealCellDOM(cell);
+                    }
+                });
+            }
+
             updateMineCounter() { this.mineCounterElement.innerText = `남은 지뢰: ${settings.mines - this.flags}`; }
             getNeighbors(y, x) { const n = []; for (let yo = -1; yo <= 1; yo++) { for (let xo = -1; xo <= 1; xo++) { if (yo === 0 && xo === 0) continue; const ny = y + yo; const nx = x + xo; if (ny >= 0 && ny < settings.height && nx >= 0 && nx < settings.width) n.push(this.board[ny][nx]); } } return n; }
             stopAI() { clearInterval(this.aiInterval); }
             
-            aiTurn() {
-                if (!isCompetitionRunning || this.isBoardOver) return;
-                if (this.makeCertainMove()) return;
-                if (this.makeEducatedGuess()) return;
-                this.makeRandomGuess();
-            }
-
-            makeCertainMove() {
-                for (const cell of this.board.flat()) {
-                    if (!cell.isRevealed || cell.adjacentMines === 0) continue;
-                    const neighbors = this.getNeighbors(cell.y, cell.x);
-                    const hidden = neighbors.filter(n => !n.isRevealed && !n.isFlagged);
-                    const flaggedCount = neighbors.filter(n => n.isFlagged).length;
-                    if (hidden.length === 0) continue;
-                    if (cell.adjacentMines - flaggedCount === hidden.length) {
-                        hidden.forEach(n => { if (!n.isFlagged) { n.isFlagged = true; this.flags++; this.boardElement.querySelector(`[data-y='${n.y}'][data-x='${n.x}']`).innerText = '🚩'; } });
-                        this.updateMineCounter(); return true;
-                    }
-                    if (cell.adjacentMines === flaggedCount) {
-                        hidden.forEach(n => this.revealCell(n)); return true;
-                    }
-                }
-                return false;
-            }
-            
-            makeEducatedGuess() {
-                const candidates = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged);
-                let bestGuess = { cell: null, probability: 2.0 };
-                for(const candidate of candidates) {
-                    const numberedNeighbors = this.getNeighbors(candidate.y, candidate.x).filter(n => n.isRevealed && n.adjacentMines > 0);
-                    if(numberedNeighbors.length === 0) continue;
-                    let minProb = 1.0;
-                    for(const neighbor of numberedNeighbors) {
-                        const allNeighbors = this.getNeighbors(neighbor.y, neighbor.x);
-                        const hiddenCount = allNeighbors.filter(n => !n.isRevealed && !n.isFlagged).length;
-                        const flaggedCount = allNeighbors.filter(n => n.isFlagged).length;
-                        if(hiddenCount > 0) { const prob = (neighbor.adjacentMines - flaggedCount) / hiddenCount; minProb = Math.min(minProb, prob); }
-                    }
-                    if(minProb < bestGuess.probability) { bestGuess = { cell: candidate, probability: minProb }; }
-                }
-                if(bestGuess.cell) { this.revealCell(bestGuess.cell); return true; }
-                return false;
-            }
-
-            makeRandomGuess() {
-                const hidden = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged);
-                if (hidden.length > 0) { this.revealCell(hidden[Math.floor(Math.random() * hidden.length)]); }
-            }
+            // ... (aiTurn, makeCertainMove, makeEducatedGuess, makeRandomGuess - 변경 없음) ...
+            aiTurn() { if (!isCompetitionRunning || this.isBoardOver) return; if (this.makeCertainMove()) return; if (this.makeEducatedGuess()) return; this.makeRandomGuess(); }
+            makeCertainMove() { for (const cell of this.board.flat()) { if (!cell.isRevealed || cell.adjacentMines === 0) continue; const neighbors = this.getNeighbors(cell.y, cell.x); const hidden = neighbors.filter(n => !n.isRevealed && !n.isFlagged); const flaggedCount = neighbors.filter(n => n.isFlagged).length; if (hidden.length === 0) continue; if (cell.adjacentMines - flaggedCount === hidden.length) { hidden.forEach(n => { if (!n.isFlagged) { n.isFlagged = true; this.flags++; this.boardElement.querySelector(`[data-y='${n.y}'][data-x='${n.x}']`).innerText = '🚩'; } }); this.updateMineCounter(); return true; } if (cell.adjacentMines === flaggedCount) { hidden.forEach(n => this.revealCell(n)); return true; } } return false; }
+            makeEducatedGuess() { const candidates = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged); let bestGuess = { cell: null, probability: 2.0 }; for(const candidate of candidates) { const numberedNeighbors = this.getNeighbors(candidate.y, candidate.x).filter(n => n.isRevealed && n.adjacentMines > 0); if(numberedNeighbors.length === 0) continue; let minProb = 1.0; for(const neighbor of numberedNeighbors) { const allNeighbors = this.getNeighbors(neighbor.y, neighbor.x); const hiddenCount = allNeighbors.filter(n => !n.isRevealed && !n.isFlagged).length; const flaggedCount = allNeighbors.filter(n => n.isFlagged).length; if(hiddenCount > 0) { const prob = (neighbor.adjacentMines - flaggedCount) / hiddenCount; minProb = Math.min(minProb, prob); } } if(minProb < bestGuess.probability) { bestGuess = { cell: candidate, probability: minProb }; } } if(bestGuess.cell) { this.revealCell(bestGuess.cell); return true; } return false; }
+            makeRandomGuess() { const hidden = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged); if (hidden.length > 0) { this.revealCell(hidden[Math.floor(Math.random() * hidden.length)]); } }
         }
 
         // --- 전역 제어 함수 ---
@@ -256,29 +216,36 @@
             }
         }
         
+        // *** 여기가 핵심: 정확한 점수 계산 함수 ***
+        function calculateCorrectFlags(board) {
+            return board.flat().filter(cell => cell.isFlagged && cell.isMine).length;
+        }
+
         function showFinalResult() {
             startButton.disabled = false;
             startButton.innerText = "다시 시작";
 
-            const playerMinesLeft = settings.mines - playerGame.flags;
-            const aiMinesLeft = settings.mines - aiGame.flags;
+            // *** 수정된 점수 계산 로직 ***
+            const playerCorrectFlags = calculateCorrectFlags(playerGame.board);
+            const aiCorrectFlags = calculateCorrectFlags(aiGame.board);
             
             let resultText = '';
-            let subText = `플레이어: ${playerMinesLeft}개 남음 / AI: ${aiMinesLeft}개 남음`;
-
-            if (playerMinesLeft === aiMinesLeft) { resultText = '🤝 무승부! 🤝'; } 
-            else if (playerMinesLeft < aiMinesLeft) { resultText = '🎉 플레이어 승리! 🎉'; } 
-            else { resultText = '🤖 AI 승리! 🤖'; }
+            // *** 수정된 결과 메시지 ***
+            let subText = `플레이어: ${playerCorrectFlags}개 발견 / AI: ${aiCorrectFlags}개 발견`;
+            
+            // *** 수정된 승패 판정 ***
+            if (playerCorrectFlags === aiCorrectFlags) { resultText = '무승부!'; } 
+            else if (playerCorrectFlags > aiCorrectFlags) { resultText = '플레이어 승리!'; } 
+            else { resultText = 'AI 승리!'; }
 
             resultMessageElement.innerHTML = `${resultText}<small>${subText}</small>`;
             resultMessageElement.classList.remove('hidden');
             
-            // 모든 셀의 최종 상태를 공개
-            playerGame.board.flat().forEach(c => playerGame.revealCellDOM(c.y, c.x));
-            aiGame.board.flat().forEach(c => aiGame.revealCellDOM(c.y, c.x));
+            // 모든 셀의 최종 상태를 공개 (틀린 깃발 포함)
+            playerGame.revealFinalBoard();
+            aiGame.revealFinalBoard();
         }
         
-        // 페이지 로드 시 UI만 초기화
         new GameInstance('player', true).createBoard();
         new GameInstance('ai', false).createBoard();
     });
