@@ -55,16 +55,13 @@
                 <li><strong>좌클릭 (짧게):</strong>
                     <ul>
                         <li>닫힌 칸을 클릭: 칸을 **영구적으로 엽니다.**</li>
-                        <li>열린 숫자 칸을 클릭: 주변 칸들을 **실제로 엽니다.**
-                            <br> - (안전 모드: 주변 깃발이 없으면 안전한 칸만 열림)
-                            <br> - (위험 모드: 주변 깃발이 있으면 판단이 틀릴 시 게임 종료)
-                        </li>
+                        <li>열린 숫자 칸을 클릭: 주변 칸들을 **실제로 엽니다.**</li>
                     </ul>
                 </li>
-                 <li><strong>좌클릭 (꾹 누르기):</strong>
+                 <li><strong>좌클릭 (꾹 누르기) - 미리보기:</strong>
                     <ul>
-                        <li>열린 숫자 칸 위에서 꾹 누르면, **주변을 엿보는 미리보기 기능만** 작동합니다.</li>
-                        <li>마우스를 떼면 미리보기는 사라지고, 아무 칸도 열리지 않습니다.</li>
+                        <li>열린 숫자 칸을 꾹 누르면 주변을 엿볼 수 있습니다.</li>
+                        <li>**주의!** 이 때 주변에 **잘못 꽂은 깃발이 있다면 즉시 게임이 종료**됩니다.</li>
                     </ul>
                 </li>
                 <li><strong>우클릭:</strong> 깃발(🚩)을 꽂습니다.</li>
@@ -128,7 +125,7 @@
             constructor(idPrefix, isPlayer) {
                 this.idPrefix = idPrefix; this.isPlayer = isPlayer;
                 this.isBoardOver = false; this.aiInterval = null;
-                this.wasJustPreviewing = false; // ★★★ 미리보기 행동 추적 플래그
+                this.wasJustPreviewing = false;
                 this.boardElement = document.getElementById(`${idPrefix}-board`);
                 this.mineCounterElement = document.getElementById(`${idPrefix}-mine-counter`);
                 this.timerElement = document.getElementById(`${idPrefix}-timer`);
@@ -164,8 +161,17 @@
                 if (event.button !== 0 || this.isBoardOver) return;
                 const cellData = this.board[y][x];
                 if (cellData.isRevealed && cellData.adjacentMines > 0) {
-                    this.wasJustPreviewing = true; // ★★★ 미리보기 시작을 알림
-                    this.getNeighbors(y, x).forEach(neighbor => {
+                    const neighbors = this.getNeighbors(y, x);
+                    
+                    // ★★★ 핵심 수정: 미리보기 시도 시, 잘못된 깃발이 있으면 즉시 게임 종료 ★★★
+                    const hasIncorrectFlag = neighbors.some(n => n.isFlagged && !n.isMine);
+                    if (hasIncorrectFlag) {
+                        this.finishBoard();
+                        return;
+                    }
+
+                    this.wasJustPreviewing = true;
+                    neighbors.forEach(neighbor => {
                         if (!neighbor.isRevealed && !neighbor.isFlagged) {
                             this.boardElement.querySelector(`[data-y='${neighbor.y}'][data-x='${neighbor.x}']`)?.classList.add('cell-preview');
                         }
@@ -183,25 +189,24 @@
             handleCellClick(y, x) {
                 if (!isCompetitionRunning || this.isBoardOver) return;
                 
-                // ★★★ 핵심 수정: 미리보기 직후의 클릭은 무시
                 if (this.wasJustPreviewing) {
-                    this.wasJustPreviewing = false; // 플래그를 리셋하고
-                    return; // 함수를 즉시 종료
+                    this.wasJustPreviewing = false;
+                    return;
                 }
 
                 const cell = this.board[y][x];
 
-                // 열린 칸을 "짧게" 클릭했을 때 (주변 열기)
                 if (cell.isRevealed) {
                     if (cell.adjacentMines > 0) {
                         const neighbors = this.getNeighbors(y, x);
                         const flagCount = neighbors.filter(n => n.isFlagged).length;
-
-                        if (flagCount === 0) { // 안전 모드
+                        
+                        // 이전에 구현했던 안전/위험 모드 로직은 그대로 유지됩니다.
+                        if (flagCount === 0) {
                             neighbors.forEach(n => {
                                 if (!n.isFlagged && !n.isRevealed && !n.isMine) { this.revealCell(n); }
                             });
-                        } else { // 위험 모드
+                        } else {
                             const hasIncorrectFlag = neighbors.some(n => n.isFlagged && !n.isMine);
                             if (hasIncorrectFlag) { this.finishBoard(); return; }
                             neighbors.forEach(n => {
@@ -212,7 +217,6 @@
                     return;
                 }
 
-                // 닫힌 칸을 처음 클릭했을 때
                 if (cell.isFlagged) return;
                 this.revealCell(cell);
             }
