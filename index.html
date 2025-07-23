@@ -11,7 +11,8 @@
         #global-menu { margin-bottom: 20px; }
         #start-competition { padding: 10px 20px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }
         #start-competition:disabled { background-color: #a5d6a7; cursor: not-allowed; }
-        #main-container { display: flex; justify-content: center; align-items: flex-start; gap: 40px; flex-wrap: wrap; }
+        
+        #main-container { display: flex; justify-content: center; align-items: flex-start; gap: 40px; width: 100%; }
         .game-instance-container { position: relative; padding: 20px; background-color: var(--board-bg); border: 3px solid var(--cell-border-light); border-right-color: var(--cell-border); border-bottom-color: var(--cell-border); box-shadow: 5px 5px 15px rgba(0,0,0,0.2); text-align: center; }
         
         /* 개별 보드 종료 시 나타나는 오버레이 */
@@ -22,10 +23,11 @@
         .status-bar { display: flex; justify-content: space-between; padding: 10px; margin-bottom: 15px; border: 3px solid var(--cell-border); border-right-color: var(--cell-border-light); border-bottom-color: var(--cell-border-light); background-color: #333; color: #ff0000; font-family: 'Courier New', Courier, monospace; font-size: 24px; font-weight: bold; }
         .game-board-wrapper { border: 3px solid var(--cell-border); border-right-color: var(--cell-border-light); border-bottom-color: var(--cell-border-light); }
         .game-board { display: grid; }
-        .cell { width: 25px; height: 25px; background-color: var(--board-bg); border: 2px solid var(--cell-border-light); border-right-color: var(--cell-border); border-bottom-color: var(--cell-border); display: flex; justify-content: center; align-items: center; font-size: 16px; font-weight: bold; }
+        
+        .cell { width: 20px; height: 20px; background-color: var(--board-bg); border: 2px solid var(--cell-border-light); border-right-color: var(--cell-border); border-bottom-color: var(--cell-border); display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: bold; }
         .cell.player-cell { cursor: pointer; }
         .cell.revealed { background-color: var(--revealed-bg); border: 1px solid #7b7b7b; }
-        .cell.flagged { font-size: 16px; }
+        .cell.flagged { font-size: 14px; }
         .cell.mine { background-color: #ff0000; }
         .cell[data-count="1"] { color: #0000ff; } .cell[data-count="2"] { color: #008200; } .cell[data-count="3"] { color: #ff0000; } .cell[data-count="4"] { color: #000084; } .cell[data-count="5"] { color: #840000; } .cell[data-count="6"] { color: #008284; } .cell[data-count="7"] { color: #840084; } .cell[data-count="8"] { color: #757575; }
         
@@ -40,21 +42,18 @@
     </div>
 
     <div id="main-container">
-        <!-- 플레이어 게임 화면 -->
         <div id="player-game" class="game-instance-container">
             <div id="player-overlay" class="board-overlay hidden">게임 종료</div>
-            <h1>🙂 플레이어</h1>
+            <h1>플레이어</h1>
             <div class="status-bar">
                 <div id="player-mine-counter">남은 지뢰: 99</div>
                 <div id="player-timer">시간: 0</div>
             </div>
             <div class="game-board-wrapper"><div id="player-board" class="game-board"></div></div>
         </div>
-
-        <!-- AI 게임 화면 -->
         <div id="ai-game" class="game-instance-container">
             <div id="ai-overlay" class="board-overlay hidden">게임 종료</div>
-            <h1>🤖 AI</h1>
+            <h1>AI</h1>
             <div class="status-bar">
                 <div id="ai-mine-counter">남은 지뢰: 99</div>
                 <div id="ai-timer">시간: 0</div>
@@ -68,7 +67,6 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const settings = { width: 30, height: 16, mines: 99 };
-        const AI_MISTAKE_RATE = 0.60;
         const AI_THINK_SPEED = 100;
 
         let playerGame, aiGame;
@@ -82,12 +80,8 @@
 
         class GameInstance {
             constructor(idPrefix, isPlayer) {
-                this.idPrefix = idPrefix;
-                this.isPlayer = isPlayer;
-                this.isBoardOver = false;
-                this.aiInterval = null;
-                
-                // DOM 요소 캐싱
+                this.idPrefix = idPrefix; this.isPlayer = isPlayer;
+                this.isBoardOver = false; this.aiInterval = null;
                 this.boardElement = document.getElementById(`${idPrefix}-board`);
                 this.mineCounterElement = document.getElementById(`${idPrefix}-mine-counter`);
                 this.timerElement = document.getElementById(`${idPrefix}-timer`);
@@ -95,28 +89,18 @@
             }
 
             setup() {
-                this.board = [];
-                this.flags = 0;
-                this.isBoardOver = false;
+                this.board = []; this.flags = 0; this.isBoardOver = false;
                 this.overlayElement.classList.add('hidden');
-                this.updateMineCounter();
-                this.createBoard();
+                this.updateMineCounter(); this.createBoard();
             }
 
             createBoard() {
-                this.board = Array.from({ length: settings.height }, (_, y) =>
-                    Array.from({ length: settings.width }, (_, x) => ({ y, x, isMine: false, isRevealed: false, isFlagged: false, adjacentMines: 0 }))
-                );
-                
-                this.boardElement.innerHTML = '';
-                this.boardElement.style.gridTemplateColumns = `repeat(${settings.width}, 1fr)`;
-
+                this.board = Array.from({ length: settings.height }, (_, y) => Array.from({ length: settings.width }, (_, x) => ({ y, x, isMine: false, isRevealed: false, isFlagged: false, adjacentMines: 0 })));
+                this.boardElement.innerHTML = ''; this.boardElement.style.gridTemplateColumns = `repeat(${settings.width}, 1fr)`;
                 for (let y = 0; y < settings.height; y++) {
                     for (let x = 0; x < settings.width; x++) {
                         const cellElement = document.createElement('div');
-                        cellElement.classList.add('cell');
-                        cellElement.dataset.y = y;
-                        cellElement.dataset.x = x;
+                        cellElement.classList.add('cell'); cellElement.dataset.y = y; cellElement.dataset.x = x;
                         if (this.isPlayer) {
                             cellElement.classList.add('player-cell');
                             cellElement.addEventListener('click', () => this.handleCellClick(y, x));
@@ -128,12 +112,10 @@
             }
             
             startLogic() {
-                const startY = Math.floor(Math.random() * settings.height);
-                const startX = Math.floor(Math.random() * settings.width);
+                const startY = Math.floor(Math.random() * settings.height); const startX = Math.floor(Math.random() * settings.width);
                 this.placeMines(startY, startX);
-                
-                if (!this.isPlayer) { // AI인 경우에만
-                    this.revealCell(this.board[startY][startX]); // 첫 수를 두고 시작
+                if (!this.isPlayer) {
+                    this.revealCell(this.board[startY][startX]);
                     this.aiInterval = setInterval(() => this.aiTurn(), AI_THINK_SPEED);
                 }
             }
@@ -141,16 +123,13 @@
             placeMines(firstClickY, firstClickX) {
                 let minesPlaced = 0;
                 while (minesPlaced < settings.mines) {
-                    const y = Math.floor(Math.random() * settings.height);
-                    const x = Math.floor(Math.random() * settings.width);
+                    const y = Math.floor(Math.random() * settings.height); const x = Math.floor(Math.random() * settings.width);
                     const isSafeZone = Math.abs(y - firstClickY) <= 1 && Math.abs(x - firstClickX) <= 1;
-                    if (!this.board[y][x].isMine && !(y === firstClickY && x === firstClickX) && !isSafeZone) {
-                        this.board[y][x].isMine = true; minesPlaced++;
-                    }
+                    if (!this.board[y][x].isMine && !(y === firstClickY && x === firstClickX) && !isSafeZone) { this.board[y][x].isMine = true; minesPlaced++; }
                 }
                 for (let y = 0; y < settings.height; y++) { for (let x = 0; x < settings.width; x++) { if (!this.board[y][x].isMine) this.board[y][x].adjacentMines = this.getNeighbors(y, x).filter(n => n.isMine).length; } }
             }
-
+            
             handleCellClick(y, x) {
                 if (!isCompetitionRunning || this.isBoardOver || this.board[y][x].isRevealed || this.board[y][x].isFlagged) return;
                 this.revealCell(this.board[y][x]);
@@ -158,14 +137,8 @@
 
             revealCell(cell) {
                 if (!cell || cell.isRevealed || cell.isFlagged) return;
-                
-                cell.isRevealed = true;
-                this.revealCellDOM(cell.y, cell.x);
-
-                if (cell.isMine) {
-                    this.finishBoard(); return;
-                }
-
+                cell.isRevealed = true; this.revealCellDOM(cell.y, cell.x);
+                if (cell.isMine) { this.finishBoard(); return; }
                 if (cell.adjacentMines === 0) this.getNeighbors(cell.y, cell.x).forEach(n => this.revealCell(n));
                 this.checkWin();
             }
@@ -179,15 +152,13 @@
                 else { this.flags--; cellElement.innerText = ''; }
                 this.updateMineCounter();
             }
-            
-            // *** 핵심 로직 ***
-            // 개별 게임판이 종료되는 함수
+
             finishBoard() {
-                if(this.isBoardOver) return; // 중복 실행 방지
+                if (this.isBoardOver) return;
                 this.isBoardOver = true;
                 this.overlayElement.classList.remove('hidden');
-                if(!this.isPlayer) this.stopAI(); // AI라면 생각 멈추기
-                checkCompetitionEnd(); // 전체 경쟁이 끝났는지 확인
+                if (!this.isPlayer) this.stopAI();
+                checkCompetitionEnd();
             }
 
             checkWin() {
@@ -196,25 +167,69 @@
                     this.finishBoard();
                 }
             }
-
-            // --- 이하 AI 및 유틸리티 함수 (큰 변경 없음) ---
+            
             revealCellDOM(y, x) { const cell = this.board[y][x]; const cellElement = this.boardElement.querySelector(`[data-y='${y}'][data-x='${x}']`); if (!cellElement) return; cellElement.classList.add('revealed'); if (cell.isMine) { cellElement.innerText = '💣'; cellElement.classList.add('mine'); } else if (cell.adjacentMines > 0) { cellElement.innerText = cell.adjacentMines; cellElement.dataset.count = cell.adjacentMines; } }
             updateMineCounter() { this.mineCounterElement.innerText = `남은 지뢰: ${settings.mines - this.flags}`; }
             getNeighbors(y, x) { const n = []; for (let yo = -1; yo <= 1; yo++) { for (let xo = -1; xo <= 1; xo++) { if (yo === 0 && xo === 0) continue; const ny = y + yo; const nx = x + xo; if (ny >= 0 && ny < settings.height && nx >= 0 && nx < settings.width) n.push(this.board[ny][nx]); } } return n; }
-            aiTurn() { if (!isCompetitionRunning || this.isBoardOver) return; if (Math.random() < AI_MISTAKE_RATE) { this.makeProbabilisticGuess(); return; } if (this.makeCertainMove()) return; this.makeProbabilisticGuess(); }
-            makeCertainMove() { for (const cell of this.board.flat()) { if (!cell.isRevealed || cell.adjacentMines === 0) continue; const neighbors = this.getNeighbors(cell.y, cell.x); const hidden = neighbors.filter(n => !n.isRevealed && !n.isFlagged); const flaggedCount = neighbors.filter(n => n.isFlagged).length; if (hidden.length === 0) continue; if (cell.adjacentMines - flaggedCount === hidden.length) { hidden.forEach(n => { if (!n.isFlagged) { n.isFlagged = true; this.flags++; this.boardElement.querySelector(`[data-y='${n.y}'][data-x='${n.x}']`).innerText = '🚩'; } }); this.updateMineCounter(); return true; } if (cell.adjacentMines === flaggedCount) { hidden.forEach(n => this.revealCell(n)); return true; } } return false; }
-            makeProbabilisticGuess() { const hidden = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged); if (hidden.length > 0) { const randomCell = hidden[Math.floor(Math.random() * hidden.length)]; this.revealCell(randomCell); } }
             stopAI() { clearInterval(this.aiInterval); }
+            
+            aiTurn() {
+                if (!isCompetitionRunning || this.isBoardOver) return;
+                if (this.makeCertainMove()) return;
+                if (this.makeEducatedGuess()) return;
+                this.makeRandomGuess();
+            }
+
+            makeCertainMove() {
+                for (const cell of this.board.flat()) {
+                    if (!cell.isRevealed || cell.adjacentMines === 0) continue;
+                    const neighbors = this.getNeighbors(cell.y, cell.x);
+                    const hidden = neighbors.filter(n => !n.isRevealed && !n.isFlagged);
+                    const flaggedCount = neighbors.filter(n => n.isFlagged).length;
+                    if (hidden.length === 0) continue;
+                    if (cell.adjacentMines - flaggedCount === hidden.length) {
+                        hidden.forEach(n => { if (!n.isFlagged) { n.isFlagged = true; this.flags++; this.boardElement.querySelector(`[data-y='${n.y}'][data-x='${n.x}']`).innerText = '🚩'; } });
+                        this.updateMineCounter(); return true;
+                    }
+                    if (cell.adjacentMines === flaggedCount) {
+                        hidden.forEach(n => this.revealCell(n)); return true;
+                    }
+                }
+                return false;
+            }
+            
+            makeEducatedGuess() {
+                const candidates = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged);
+                let bestGuess = { cell: null, probability: 2.0 };
+                for(const candidate of candidates) {
+                    const numberedNeighbors = this.getNeighbors(candidate.y, candidate.x).filter(n => n.isRevealed && n.adjacentMines > 0);
+                    if(numberedNeighbors.length === 0) continue;
+                    let minProb = 1.0;
+                    for(const neighbor of numberedNeighbors) {
+                        const allNeighbors = this.getNeighbors(neighbor.y, neighbor.x);
+                        const hiddenCount = allNeighbors.filter(n => !n.isRevealed && !n.isFlagged).length;
+                        const flaggedCount = allNeighbors.filter(n => n.isFlagged).length;
+                        if(hiddenCount > 0) { const prob = (neighbor.adjacentMines - flaggedCount) / hiddenCount; minProb = Math.min(minProb, prob); }
+                    }
+                    if(minProb < bestGuess.probability) { bestGuess = { cell: candidate, probability: minProb }; }
+                }
+                if(bestGuess.cell) { this.revealCell(bestGuess.cell); return true; }
+                return false;
+            }
+
+            makeRandomGuess() {
+                const hidden = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged);
+                if (hidden.length > 0) { this.revealCell(hidden[Math.floor(Math.random() * hidden.length)]); }
+            }
         }
 
         // --- 전역 제어 함수 ---
         function startCompetition() {
-            if (isCompetitionRunning) return; // 이미 시작된 게임은 다시 시작하지 않음
+            if (isCompetitionRunning) return;
             
             isCompetitionRunning = true;
             resultMessageElement.classList.add('hidden');
             clearInterval(competitionTimerInterval);
-
             startButton.disabled = true;
             
             playerGame = new GameInstance('player', true);
@@ -227,17 +242,16 @@
 
             let time = 0;
             competitionTimerInterval = setInterval(() => {
+                if (!isCompetitionRunning) { clearInterval(competitionTimerInterval); return; }
                 time++;
                 playerGame.timerElement.innerText = `시간: ${time}`;
                 aiGame.timerElement.innerText = `시간: ${time}`;
             }, 1000);
         }
 
-        // *** 여기가 핵심 로직: 양쪽 게임이 모두 끝났는지 확인 ***
         function checkCompetitionEnd() {
             if (playerGame.isBoardOver && aiGame.isBoardOver) {
                 isCompetitionRunning = false;
-                clearInterval(competitionTimerInterval);
                 showFinalResult();
             }
         }
@@ -252,23 +266,19 @@
             let resultText = '';
             let subText = `플레이어: ${playerMinesLeft}개 남음 / AI: ${aiMinesLeft}개 남음`;
 
-            if (playerMinesLeft === aiMinesLeft) {
-                resultText = '🤝 무승부! 🤝';
-            } else if (playerMinesLeft < aiMinesLeft) {
-                resultText = '🎉 플레이어 승리! 🎉';
-            } else {
-                resultText = '🤖 AI 승리! 🤖';
-            }
+            if (playerMinesLeft === aiMinesLeft) { resultText = '🤝 무승부! 🤝'; } 
+            else if (playerMinesLeft < aiMinesLeft) { resultText = '🎉 플레이어 승리! 🎉'; } 
+            else { resultText = '🤖 AI 승리! 🤖'; }
 
             resultMessageElement.innerHTML = `${resultText}<small>${subText}</small>`;
             resultMessageElement.classList.remove('hidden');
-
-            // 최종적으로 모든 셀을 공개
+            
+            // 모든 셀의 최종 상태를 공개
             playerGame.board.flat().forEach(c => playerGame.revealCellDOM(c.y, c.x));
             aiGame.board.flat().forEach(c => aiGame.revealCellDOM(c.y, c.x));
         }
-
-        // 페이지 로드 시 초기 UI만 설정
+        
+        // 페이지 로드 시 UI만 초기화
         new GameInstance('player', true).createBoard();
         new GameInstance('ai', false).createBoard();
     });
