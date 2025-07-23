@@ -86,7 +86,6 @@
     </style>
 </head>
 <body>
-    <!-- *** 여기가 추가되었습니다: 게임 설명 모달 *** -->
     <div id="rules-modal-overlay">
         <div id="rules-modal">
             <h2>지뢰찾기 대결 규칙!</h2>
@@ -138,6 +137,8 @@
     document.addEventListener('DOMContentLoaded', () => {
         const settings = { width: 16, height: 16, mines: 40 };
         const AI_THINK_SPEED = 100;
+        const AI_CARELESS_THRESHOLD = 18;
+        const AI_CARELESS_MISTAKE_RATE = 0.4;
 
         let playerGame, aiGame;
         let isCompetitionRunning = false;
@@ -145,15 +146,12 @@
 
         const startButton = document.getElementById('start-competition');
         const resultMessageElement = document.getElementById('result-message');
-        
-        // *** 여기가 추가되었습니다: 모달 관련 요소 ***
         const rulesModalOverlay = document.getElementById('rules-modal-overlay');
         const closeRulesButton = document.getElementById('close-rules-modal');
 
-        // *** 여기가 추가되었습니다: 모달 닫기 이벤트 ***
         closeRulesButton.addEventListener('click', () => {
             rulesModalOverlay.classList.add('hidden');
-            startButton.disabled = false; // 모달을 닫아야 버튼 활성화
+            startButton.disabled = false;
         });
 
         startButton.addEventListener('click', () => {
@@ -185,9 +183,22 @@
             updateMineCounter() { this.mineCounterElement.innerText = `남은 지뢰: ${settings.mines - this.flags}`; }
             getNeighbors(y, x) { const n = []; for (let yo = -1; yo <= 1; yo++) { for (let xo = -1; xo <= 1; xo++) { if (yo === 0 && xo === 0) continue; const ny = y + yo; const nx = x + xo; if (ny >= 0 && ny < settings.height && nx >= 0 && nx < settings.width) n.push(this.board[ny][nx]); } } return n; }
             stopAI() { clearInterval(this.aiInterval); }
-            aiTurn() { if (!isCompetitionRunning || this.isBoardOver) return; if (this.makeCertainMove()) return; if (this.makeEducatedGuess()) return; this.makeRandomGuess(); }
+
+            aiTurn() {
+                if (!isCompetitionRunning || this.isBoardOver) return;
+                const correctFlags = this.countCorrectFlags();
+                if (correctFlags >= AI_CARELESS_THRESHOLD && Math.random() < AI_CARELESS_MISTAKE_RATE) {
+                    if (this.makeSimpleGuess()) return;
+                }
+                if (this.makeCertainMove()) return;
+                if (this.makeEducatedGuess()) return;
+                this.makeRandomGuess();
+            }
+
+            countCorrectFlags() { return this.board.flat().filter(cell => cell.isFlagged && cell.isMine).length; }
             makeCertainMove() { for (const cell of this.board.flat()) { if (!cell.isRevealed || cell.adjacentMines === 0) continue; const neighbors = this.getNeighbors(cell.y, cell.x); const hidden = neighbors.filter(n => !n.isRevealed && !n.isFlagged); const flaggedCount = neighbors.filter(n => n.isFlagged).length; if (hidden.length === 0) continue; if (cell.adjacentMines - flaggedCount === hidden.length) { hidden.forEach(n => { if (!n.isFlagged) { n.isFlagged = true; this.flags++; this.boardElement.querySelector(`[data-y='${n.y}'][data-x='${n.x}']`).innerText = '🚩'; } }); this.updateMineCounter(); return true; } if (cell.adjacentMines === flaggedCount) { hidden.forEach(n => this.revealCell(n)); return true; } } return false; }
-            makeEducatedGuess() { const candidates = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged); let bestGuess = { cell: null, probability: 2.0 }; for (const candidate of candidates) { const numberedNeighbors = this.getNeighbors(candidate.y, candidate.x).filter(n => n.isRevealed && n.adjacentMines > 0); if (numberedNeighbors.length === 0) continue; let minProb = 1.0; for (const neighbor of numberedNeighbors) { const allNeighbors = this.getNeighbors(neighbor.y, neighbor.x); const hiddenCount = allNeighbors.filter(n => !n.isRevealed && !n.isFlagged).length; const flaggedCount = allNeighbors.filter(n => n.isFlagged).length; if (hiddenCount > 0) { const prob = (neighbor.adjacentMines - flaggedCount) / hiddenCount; minProb = Math.min(minProb, prob); } } if (minProb < bestGuess.probability) { bestGuess = { cell: candidate, probability: minProb }; } } if (bestGuess.cell) { this.revealCell(bestGuess.cell); return true; } return false; }
+            makeEducatedGuess() { const candidates = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged); let bestGuess = { cell: null, probability: 2.0 }; for (const candidate of candidates) { const numberedNeighbors = this.getNeighbors(candidate.y, candidate.x).filter(n => n.isRevealed && n.adjacentMines > 0); if (numberedNeighbors.length === 0) continue; let minProb = 1.0; for (const neighbor of numberedNeighbors) { const allNeighbors = this.getNeighbors(neighbor.y, neighbor.x); const hiddenCount = allNeighbors.filter(n => !n.isRevealed && !n.isFlagged).length; const flaggedCount = allNeighbors.filter(n => n.isFlagged).length; if (hiddenCount > 0) { const prob = (neighbor.adjacentMines - flaggedCount) / hiddenCount; minProb = Math.min(minProb, prob); } } if (minProb < bestGuess.probability) { bestGuess = { cell: candidate, probability: minProb }; } } if (bestGuess.cell && bestGuess.probability < 1) { this.revealCell(bestGuess.cell); return true; } return false; }
+            makeSimpleGuess() { const candidates = []; this.board.flat().forEach(cell => { if (cell.isRevealed && cell.adjacentMines > 0) { this.getNeighbors(cell.y, cell.x).forEach(neighbor => { if (!neighbor.isRevealed && !neighbor.isFlagged) { candidates.push(neighbor); } }); } }); if (candidates.length > 0) { const randomCandidate = candidates[Math.floor(Math.random() * candidates.length)]; this.revealCell(randomCandidate); return true; } return false; }
             makeRandomGuess() { const hidden = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged); if (hidden.length > 0) { this.revealCell(hidden[Math.floor(Math.random() * hidden.length)]); } }
         }
 
@@ -195,12 +206,10 @@
             isCompetitionRunning = false;
             resultMessageElement.classList.add('hidden');
             clearInterval(competitionTimerInterval);
-
             playerGame = new GameInstance('player', true);
             aiGame = new GameInstance('ai', false);
             playerGame.setup();
             aiGame.setup();
-            
             startButton.disabled = false;
             startButton.innerText = "대결 시작";
         }
@@ -209,10 +218,8 @@
             if (isCompetitionRunning) return;
             isCompetitionRunning = true;
             startButton.disabled = true;
-            
             playerGame.startLogic();
             aiGame.startLogic();
-
             let time = 0;
             competitionTimerInterval = setInterval(() => {
                 if (!isCompetitionRunning) { clearInterval(competitionTimerInterval); return; }
@@ -226,30 +233,24 @@
         function calculateCorrectFlags(board) { return board.flat().filter(cell => cell.isFlagged && cell.isMine).length; }
         
         function showFinalResult() {
-            startButton.innerText = "다시 시작";
             startButton.disabled = false;
-
+            startButton.innerText = "다시 시작";
             const playerCorrectFlags = calculateCorrectFlags(playerGame.board);
             const aiCorrectFlags = calculateCorrectFlags(aiGame.board);
-            
             let resultText = '';
             let subText = `플레이어: ${playerCorrectFlags}개 발견 / AI: ${aiCorrectFlags}개 발견`;
-            
             if (playerCorrectFlags === aiCorrectFlags) { resultText = '무승부!'; } 
             else if (playerCorrectFlags > aiCorrectFlags) { resultText = '플레이어 승리!'; } 
             else { resultText = 'AI 승리!'; }
-
             resultMessageElement.innerHTML = `${resultText}<small>${subText}</small>`;
             resultMessageElement.classList.remove('hidden');
-            
             playerGame.revealFinalBoard();
             aiGame.revealFinalBoard();
         }
         
-        // 페이지 로드 시 초기 UI만 설정
+        // 페이지 로드 시 초기 UI만 설정하고 버튼은 비활성화
         new GameInstance('player', true).createBoard();
         new GameInstance('ai', false).createBoard();
-        // *** 여기가 추가되었습니다: 페이지 로드 시 '대결 시작' 버튼 비활성화 ***
         startButton.disabled = true;
     });
     </script>
