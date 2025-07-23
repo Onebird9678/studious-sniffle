@@ -8,6 +8,55 @@
         :root { --board-bg: #c0c0c0; --cell-border: #808080; --cell-border-light: #ffffff; --revealed-bg: #bdbdbd; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background-color: #f0f2f5; user-select: none; }
         
+        /* --- 게임 설명 모달 스타일 --- */
+        #rules-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 200;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #rules-modal {
+            background-color: #f0f2f5;
+            padding: 25px 40px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            max-width: 500px;
+            text-align: left;
+            line-height: 1.6;
+        }
+        #rules-modal h2, #rules-modal h3 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        #rules-modal ul {
+            padding-left: 20px;
+            margin-top: 0;
+        }
+        #rules-modal button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        #rules-modal-overlay.hidden {
+            display: none;
+        }
+
+
         #global-menu { margin-bottom: 20px; }
         #start-competition { padding: 10px 20px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }
         #start-competition:disabled { background-color: #a5d6a7; cursor: not-allowed; }
@@ -37,6 +86,27 @@
     </style>
 </head>
 <body>
+    <!-- *** 여기가 추가되었습니다: 게임 설명 모달 *** -->
+    <div id="rules-modal-overlay">
+        <div id="rules-modal">
+            <h2>지뢰찾기 대결 규칙!</h2>
+            <p><strong>목표:</strong> 지뢰(💣)를 밟지 않고 모든 지뢰를 찾아내세요!</p>
+            <ul>
+                <li><strong>좌클릭:</strong> 칸을 엽니다.
+                    <ul>
+                        <li><strong>숫자</strong>는 주변 8칸에 숨겨진 지뢰의 개수입니다.</li>
+                        <li><strong>빈 칸</strong>은 주변에 지뢰가 없다는 뜻입니다.</li>
+                        <li><strong>지뢰(💣)</strong>를 누르면 당신의 게임은 종료됩니다.</li>
+                    </ul>
+                </li>
+                <li><strong>우클릭:</strong> 깃발(🚩)을 꽂습니다. 지뢰라고 생각되는 곳을 표시하세요.</li>
+            </ul>
+            <h3>vs AI 대결 규칙</h3>
+            <p>AI와 당신의 게임이 <strong>모두 끝나야</strong> 승패가 결정됩니다. 최종적으로 <strong>지뢰를 더 정확하게 많이 찾은 쪽</strong>이 승리합니다!</p>
+            <button id="close-rules-modal">게임 시작하기</button>
+        </div>
+    </div>
+
     <div id="global-menu">
         <button id="start-competition">대결 시작</button>
     </div>
@@ -75,6 +145,16 @@
 
         const startButton = document.getElementById('start-competition');
         const resultMessageElement = document.getElementById('result-message');
+        
+        // *** 여기가 추가되었습니다: 모달 관련 요소 ***
+        const rulesModalOverlay = document.getElementById('rules-modal-overlay');
+        const closeRulesButton = document.getElementById('close-rules-modal');
+
+        // *** 여기가 추가되었습니다: 모달 닫기 이벤트 ***
+        closeRulesButton.addEventListener('click', () => {
+            rulesModalOverlay.classList.add('hidden');
+            startButton.disabled = false; // 모달을 닫아야 버튼 활성화
+        });
 
         startButton.addEventListener('click', () => {
             setupCompetition();
@@ -105,72 +185,72 @@
             updateMineCounter() { this.mineCounterElement.innerText = `남은 지뢰: ${settings.mines - this.flags}`; }
             getNeighbors(y, x) { const n = []; for (let yo = -1; yo <= 1; yo++) { for (let xo = -1; xo <= 1; xo++) { if (yo === 0 && xo === 0) continue; const ny = y + yo; const nx = x + xo; if (ny >= 0 && ny < settings.height && nx >= 0 && nx < settings.width) n.push(this.board[ny][nx]); } } return n; }
             stopAI() { clearInterval(this.aiInterval); }
-
-            // *** 여기가 수정되었습니다: AI 턴 로직 개선 (실수 확률 제거) ***
-            aiTurn() {
-                if (!isCompetitionRunning || this.isBoardOver) return;
-                
-                // 1순위: 100% 확실한 수를 둠
-                if (this.makeCertainMove()) return;
-                
-                // 2순위: 확률 기반의 똑똑한 수를 둠
-                if (this.makeEducatedGuess()) return;
-
-                // 3순위: 최후의 수단으로 완전 무작위로 찍음
-                this.makeRandomGuess();
-            }
-
-            makeCertainMove() {
-                for (const cell of this.board.flat()) {
-                    if (!cell.isRevealed || cell.adjacentMines === 0) continue;
-                    const neighbors = this.getNeighbors(cell.y, cell.x);
-                    const hidden = neighbors.filter(n => !n.isRevealed && !n.isFlagged);
-                    const flaggedCount = neighbors.filter(n => n.isFlagged).length;
-                    if (hidden.length === 0) continue;
-                    if (cell.adjacentMines - flaggedCount === hidden.length) { hidden.forEach(n => { if (!n.isFlagged) { n.isFlagged = true; this.flags++; this.boardElement.querySelector(`[data-y='${n.y}'][data-x='${n.x}']`).innerText = '🚩'; } }); this.updateMineCounter(); return true; }
-                    if (cell.adjacentMines === flaggedCount) { hidden.forEach(n => this.revealCell(n)); return true; }
-                }
-                return false;
-            }
-            
-            makeEducatedGuess() {
-                const candidates = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged);
-                let bestGuess = { cell: null, probability: 2.0 };
-                for (const candidate of candidates) {
-                    const numberedNeighbors = this.getNeighbors(candidate.y, candidate.x).filter(n => n.isRevealed && n.adjacentMines > 0);
-                    if (numberedNeighbors.length === 0) continue;
-                    let minProb = 1.0;
-                    for (const neighbor of numberedNeighbors) {
-                        const allNeighbors = this.getNeighbors(neighbor.y, neighbor.x);
-                        const hiddenCount = allNeighbors.filter(n => !n.isRevealed && !n.isFlagged).length;
-                        const flaggedCount = allNeighbors.filter(n => n.isFlagged).length;
-                        if (hiddenCount > 0) { const prob = (neighbor.adjacentMines - flaggedCount) / hiddenCount; minProb = Math.min(minProb, prob); }
-                    }
-                    if (minProb < bestGuess.probability) { bestGuess = { cell: candidate, probability: minProb }; }
-                }
-                if (bestGuess.cell && bestGuess.probability < 1) { // 100% 지뢰가 아닌 경우에만 추측
-                    this.revealCell(bestGuess.cell);
-                    return true;
-                }
-                return false;
-            }
-
-            makeRandomGuess() {
-                const hidden = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged);
-                if (hidden.length > 0) {
-                    this.revealCell(hidden[Math.floor(Math.random() * hidden.length)]);
-                }
-            }
+            aiTurn() { if (!isCompetitionRunning || this.isBoardOver) return; if (this.makeCertainMove()) return; if (this.makeEducatedGuess()) return; this.makeRandomGuess(); }
+            makeCertainMove() { for (const cell of this.board.flat()) { if (!cell.isRevealed || cell.adjacentMines === 0) continue; const neighbors = this.getNeighbors(cell.y, cell.x); const hidden = neighbors.filter(n => !n.isRevealed && !n.isFlagged); const flaggedCount = neighbors.filter(n => n.isFlagged).length; if (hidden.length === 0) continue; if (cell.adjacentMines - flaggedCount === hidden.length) { hidden.forEach(n => { if (!n.isFlagged) { n.isFlagged = true; this.flags++; this.boardElement.querySelector(`[data-y='${n.y}'][data-x='${n.x}']`).innerText = '🚩'; } }); this.updateMineCounter(); return true; } if (cell.adjacentMines === flaggedCount) { hidden.forEach(n => this.revealCell(n)); return true; } } return false; }
+            makeEducatedGuess() { const candidates = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged); let bestGuess = { cell: null, probability: 2.0 }; for (const candidate of candidates) { const numberedNeighbors = this.getNeighbors(candidate.y, candidate.x).filter(n => n.isRevealed && n.adjacentMines > 0); if (numberedNeighbors.length === 0) continue; let minProb = 1.0; for (const neighbor of numberedNeighbors) { const allNeighbors = this.getNeighbors(neighbor.y, neighbor.x); const hiddenCount = allNeighbors.filter(n => !n.isRevealed && !n.isFlagged).length; const flaggedCount = allNeighbors.filter(n => n.isFlagged).length; if (hiddenCount > 0) { const prob = (neighbor.adjacentMines - flaggedCount) / hiddenCount; minProb = Math.min(minProb, prob); } } if (minProb < bestGuess.probability) { bestGuess = { cell: candidate, probability: minProb }; } } if (bestGuess.cell) { this.revealCell(bestGuess.cell); return true; } return false; }
+            makeRandomGuess() { const hidden = this.board.flat().filter(c => !c.isRevealed && !c.isFlagged); if (hidden.length > 0) { this.revealCell(hidden[Math.floor(Math.random() * hidden.length)]); } }
         }
 
-        // --- 전역 제어 함수 (변경 없음) ---
-        function setupCompetition() { isCompetitionRunning = false; resultMessageElement.classList.add('hidden'); clearInterval(competitionTimerInterval); playerGame = new GameInstance('player', true); aiGame = new GameInstance('ai', false); playerGame.setup(); aiGame.setup(); startButton.disabled = false; startButton.innerText = "대결 시작"; }
-        function startCompetition() { if (isCompetitionRunning) return; isCompetitionRunning = true; startButton.disabled = true; playerGame.startLogic(); aiGame.startLogic(); let time = 0; competitionTimerInterval = setInterval(() => { if (!isCompetitionRunning) { clearInterval(competitionTimerInterval); return; } time++; playerGame.timerElement.innerText = `시간: ${time}`; aiGame.timerElement.innerText = `시간: ${time}`; }, 1000); }
+        function setupCompetition() {
+            isCompetitionRunning = false;
+            resultMessageElement.classList.add('hidden');
+            clearInterval(competitionTimerInterval);
+
+            playerGame = new GameInstance('player', true);
+            aiGame = new GameInstance('ai', false);
+            playerGame.setup();
+            aiGame.setup();
+            
+            startButton.disabled = false;
+            startButton.innerText = "대결 시작";
+        }
+
+        function startCompetition() {
+            if (isCompetitionRunning) return;
+            isCompetitionRunning = true;
+            startButton.disabled = true;
+            
+            playerGame.startLogic();
+            aiGame.startLogic();
+
+            let time = 0;
+            competitionTimerInterval = setInterval(() => {
+                if (!isCompetitionRunning) { clearInterval(competitionTimerInterval); return; }
+                time++;
+                playerGame.timerElement.innerText = `시간: ${time}`;
+                aiGame.timerElement.innerText = `시간: ${time}`;
+            }, 1000);
+        }
+
         function checkCompetitionEnd() { if (playerGame.isBoardOver && aiGame.isBoardOver) { isCompetitionRunning = false; showFinalResult(); } }
         function calculateCorrectFlags(board) { return board.flat().filter(cell => cell.isFlagged && cell.isMine).length; }
-        function showFinalResult() { startButton.disabled = false; startButton.innerText = "다시 시작"; const playerCorrectFlags = calculateCorrectFlags(playerGame.board); const aiCorrectFlags = calculateCorrectFlags(aiGame.board); let resultText = ''; let subText = `플레이어: ${playerCorrectFlags}개 발견 / AI: ${aiCorrectFlags}개 발견`; if (playerCorrectFlags === aiCorrectFlags) { resultText = '무승부!'; } else if (playerCorrectFlags > aiCorrectFlags) { resultText = '플레이어 승리!'; } else { resultText = 'AI 승리!'; } resultMessageElement.innerHTML = `${resultText}<small>${subText}</small>`; resultMessageElement.classList.remove('hidden'); playerGame.revealFinalBoard(); aiGame.revealFinalBoard(); }
         
-        setupCompetition();
+        function showFinalResult() {
+            startButton.innerText = "다시 시작";
+            startButton.disabled = false;
+
+            const playerCorrectFlags = calculateCorrectFlags(playerGame.board);
+            const aiCorrectFlags = calculateCorrectFlags(aiGame.board);
+            
+            let resultText = '';
+            let subText = `플레이어: ${playerCorrectFlags}개 발견 / AI: ${aiCorrectFlags}개 발견`;
+            
+            if (playerCorrectFlags === aiCorrectFlags) { resultText = '무승부!'; } 
+            else if (playerCorrectFlags > aiCorrectFlags) { resultText = '플레이어 승리!'; } 
+            else { resultText = 'AI 승리!'; }
+
+            resultMessageElement.innerHTML = `${resultText}<small>${subText}</small>`;
+            resultMessageElement.classList.remove('hidden');
+            
+            playerGame.revealFinalBoard();
+            aiGame.revealFinalBoard();
+        }
+        
+        // 페이지 로드 시 초기 UI만 설정
+        new GameInstance('player', true).createBoard();
+        new GameInstance('ai', false).createBoard();
+        // *** 여기가 추가되었습니다: 페이지 로드 시 '대결 시작' 버튼 비활성화 ***
+        startButton.disabled = true;
     });
     </script>
 </body>
