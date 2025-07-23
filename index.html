@@ -175,7 +175,28 @@
             placeMines(firstClickY, firstClickX) { let minesPlaced = 0; while (minesPlaced < settings.mines) { const y = Math.floor(Math.random() * settings.height); const x = Math.floor(Math.random() * settings.width); const isSafeZone = Math.abs(y - firstClickY) <= 1 && Math.abs(x - firstClickX) <= 1; if (!this.board[y][x].isMine && !(y === firstClickY && x === firstClickX) && !isSafeZone) { this.board[y][x].isMine = true; minesPlaced++; } } for (let y = 0; y < settings.height; y++) { for (let x = 0; x < settings.width; x++) { if (!this.board[y][x].isMine) this.board[y][x].adjacentMines = this.getNeighbors(y, x).filter(n => n.isMine).length; } } }
             handleCellClick(y, x) { if (!isCompetitionRunning || this.isBoardOver || this.board[y][x].isRevealed || this.board[y][x].isFlagged) return; this.revealCell(this.board[y][x]); }
             revealCell(cell) { if (!cell || cell.isRevealed || cell.isFlagged) return; cell.isRevealed = true; this.revealCellDOM(cell); if (cell.isMine) { this.finishBoard(); return; } if (cell.adjacentMines === 0) this.getNeighbors(cell.y, cell.x).forEach(n => this.revealCell(n)); this.checkWin(); }
-            handleRightClick(y, x) { if (!isCompetitionRunning || this.isBoardOver || this.board[y][x].isRevealed) return; const cell = this.board[y][x]; const cellElement = this.boardElement.querySelector(`[data-y='${y}'][data-x='${x}']`); cell.isFlagged = !cell.isFlagged; if (cell.isFlagged) { this.flags++; cellElement.innerText = '🚩'; } else { this.flags--; cellElement.innerText = ''; } this.updateMineCounter(); }
+            
+            handleRightClick(y, x) {
+                if (!isCompetitionRunning || this.isBoardOver || this.board[y][x].isRevealed) return;
+                const cell = this.board[y][x];
+                const cellElement = this.boardElement.querySelector(`[data-y='${y}'][data-x='${x}']`);
+
+                // 수정된 부분: 깃발을 새로 설치하려 하고, 깃발 수가 지뢰 수와 같거나 많으면 함수 종료
+                if (!cell.isFlagged && this.flags >= settings.mines) {
+                    return; 
+                }
+
+                cell.isFlagged = !cell.isFlagged;
+                if (cell.isFlagged) {
+                    this.flags++;
+                    cellElement.innerText = '🚩';
+                } else {
+                    this.flags--;
+                    cellElement.innerText = '';
+                }
+                this.updateMineCounter();
+            }
+
             finishBoard() { if (this.isBoardOver) return; this.isBoardOver = true; this.overlayElement.classList.remove('hidden'); if (!this.isPlayer) this.stopAI(); checkCompetitionEnd(); }
             checkWin() { const revealedCount = this.board.flat().filter(cell => cell.isRevealed).length; if (revealedCount === settings.width * settings.height - settings.mines) { this.finishBoard(); } }
             revealCellDOM(cell) { const cellElement = this.boardElement.querySelector(`[data-y='${cell.y}'][data-x='${cell.x}']`); if (!cellElement) return; cellElement.classList.add('revealed'); if (cell.isMine) { cellElement.innerText = '💣'; cellElement.classList.add('mine'); } else if (cell.adjacentMines > 0) { cellElement.innerText = cell.adjacentMines; cellElement.dataset.count = cell.adjacentMines; } }
